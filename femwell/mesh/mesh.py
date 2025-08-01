@@ -1,19 +1,15 @@
 from collections import OrderedDict
 from itertools import combinations, product
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import gmsh
 import numpy as np
 import pygmsh
 import shapely
-from shapely.geometry import (
-    LinearRing,
-    LineString,
-    MultiLineString,
-    MultiPolygon,
-    Point,
-    Polygon,
-)
+from pygmsh.occ import Geometry
+from shapely.geometry import (LinearRing, LineString, MultiLineString,
+                              MultiPolygon, Point, Polygon)
+from shapely.geometry.base import BaseGeometry
 from shapely.ops import linemerge, polygonize, snap, split, unary_union
 
 from femwell.mesh.meshtracker import MeshTracker
@@ -181,8 +177,8 @@ def mesh_from_Dict(
 
 
 def mesh_from_OrderedDict(
-    shapes_dict: OrderedDict,
-    resolutions: Optional[Dict[str, Dict[str, float]]] = None,
+    shapes_dict: OrderedDict[Any, BaseGeometry],
+    resolutions: Dict[str, Dict[str, float]] | None = None,
     default_resolution_min: float = 1e-12,
     default_resolution_max: float = 0.5,
     filename: Optional[str] = None,
@@ -196,20 +192,27 @@ def mesh_from_OrderedDict(
     Given an ordered dict of shapely Polygons, creates a mesh containing polygon surfaces according to the dict order.
     Returns a gmsh msh with physicals corresponding to the shapes_dict boundaries (which is the minimal number of surfaces for each key)
 
-    periodic_lines: (label1, label1) tuples forcing the mesh of line[label1] to map to the mesh of line[label2]. Currently only works if the lines are not intersected.
+    Args:
+        shapes_dict (OrderedDict[Any, shapely.BaseGeometry]): dictionary of shapely BaseGeometry objects defining the waveguide cross section geometry.
+        resolutions: Optional[Dict[str, Dict[str, float]]] = None,
+        default_resolution_min (float): default minimum mesh size.
+        default_resolution_max (float): default maximum mesh size.
+        filename: (str, optional): filename used to save the generated mesh.
+        gmsh_algorithm (int): index of the meshing algorithm employed by gmsh (default to 5 (Delunay)),
+        global_quad (bool, optional): Careful, if set to true this parameter override the gmsh_algorithm choice.
+        verbose (bool): if True, enable verbose mesh generation by gmsh.
+        periodic_lines: (label1, label1) tuples forcing the mesh of line[label1] to map to the mesh of line[label2]. Currently only works if the lines are not intersected.
     """
 
-    with pygmsh.occ.geometry.Geometry() as geometry:
-        # geometry = pygmsh.occ.geometry.Geometry()
-        geometry.characteristic_length_min = default_resolution_min
-        geometry.characteristic_length_max = default_resolution_max
+    with Geometry() as model:
+        model.characteristic_length_min = default_resolution_min
+        model.characteristic_length_max = default_resolution_max
         gmsh.option.setNumber("Mesh.Algorithm", gmsh_algorithm)
-
-        model = geometry
         meshtracker = MeshTracker(model=model)
 
         # Break up shapes in order so that plane is tiled with non-overlapping layers, overriding shapes according to an order
-        shapes_tiled_dict = OrderedDict()
+        # NOTE: shapes are subtracted in reverse order, so if the shape dict is composed by (shape1, shape2, shape3) the resulting non-overlapping shapes are (shape1, shape2 - shape1, shape3 - shape2 - shape1)
+        shapes_tiled_dict: OrderedDict[Any, BaseGeometry] = OrderedDict()
         for lower_index, (lower_name, lower_shape) in reversed(
             list(enumerate(shapes_dict.items()))
         ):
@@ -323,7 +326,6 @@ def mesh_from_OrderedDict(
                 )
 
         # Add lines, reusing line segments
-
         for line_name, line in lines_broken_dict.items():
             meshtracker.add_get_xy_line(line, line_name)
 
@@ -345,6 +347,8 @@ def mesh_from_OrderedDict(
                     )
 
         # Refinement in surfaces
+        if not resolutions:
+            resolutions = {}
         n = 0
         refinement_fields = []
         for label, mesh_setting in resolutions.items():
@@ -437,7 +441,7 @@ def mesh_from_OrderedDict(
                 #     raise ValueError("Periodic line pairs must be parallel and have the same straight length in the final, intersected geometry.")
 
         gmsh.option.setNumber("Mesh.ScalingFactor", mesh_scaling_factor)
-        mesh = geometry.generate_mesh(dim=2, verbose=verbose)
+        mesh = model.generate_mesh(dim=2, verbose=verbose)
 
         if filename:
             gmsh.write(f"{filename}")

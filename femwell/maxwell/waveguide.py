@@ -1,5 +1,6 @@
 """Waveguide analysis based on https://doi.org/10.1080/02726340290084012."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Callable, List, Literal, Optional, Tuple
@@ -465,7 +466,7 @@ class Mode:
 
 
 @dataclass(frozen=True)
-class Modes:
+class Modes(Sequence[Mode]):
     modes: List
     """List of modes"""
 

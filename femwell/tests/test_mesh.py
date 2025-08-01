@@ -7,6 +7,7 @@ import pygmsh
 import shapely
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.ops import linemerge, split
+import pytest
 
 from femwell.mesh import mesh_from_OrderedDict
 
@@ -94,3 +95,24 @@ def test_lines():
         )
     )
     mesh = mesh_from_OrderedDict(shapes, resolutions={})
+
+def test_mesh_from_OrderedDict(wg):
+    try:
+        mesh_from_OrderedDict(wg, resolutions={})
+    except Exception as ex:
+        pytest.fail(f"Unexpected caught exception: {ex}")
+    
+    try:
+        mesh_from_OrderedDict(wg, resolutions=None)
+    except Exception as ex:
+        pytest.fail(f"Unexpected caught exception: {ex}")
+
+@pytest.fixture
+def wg():
+    wsim = 10
+    hclad = 8
+    hbox = 8
+    wcore = 0.5
+    hcore = 0.3
+    offset_core = 0
+    return geometry(wsim, hclad, hbox, wcore, hcore, offset_core)

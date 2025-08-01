@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple
 import gmsh
 import numpy as np
 import shapely
-from pygmsh.geo import Geometry
+from pygmsh.occ import Geometry
 from shapely.geometry import (
     LinearRing,
     LineString,
