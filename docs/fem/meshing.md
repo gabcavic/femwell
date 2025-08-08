@@ -1,3 +1,4 @@
+(chapter-mesh)=
 # Meshing in Femwell
 
 Meshing can be done in femwell and actually it provides some routines for setting up the typical mesh for a waveguide cross-section. These routines are contained in the package `femwell.mesh`.
@@ -44,8 +45,29 @@ In case of overlapping polygons, femwell operate in a similar way to [Lumerical]
 
 ### Controlling the mesh size
 
+In femwell you can control mesh size by specifying up to two parameters for every polygon:
 
-### Material region
+- `resolution`, determining the target mesh size for that polygon in micrometers [um] (as all distances in femwell
+- `distance`, controlling how the mesh size varies between two region with different `resolution` parameters. Specifically, in femweel the mesh size smoothly change between two regions as shown in the figure below. The distance parameter control how long the transition between two regions with different mesh size is.
+
+![alt text](distance_resolutions_settings.svg)
+
+If the user does not specify a resolution for a domain, femwell set the minimum and the maximum mesh size to 1E-12 and 0.5 microns respectively. These default values can be overriden by setting the parameters `default_resolution_min` and `default_resolution_max` of `mesh_from_OrderedDict`.
+
+For example in the previous code snippet, the size of the core waveguide was set by definining 
+
+```python
+resolutions = dict(core={"resolution": 0.05, "distance": 0.05})
+
+mesh = from_meshio(mesh_from_OrderedDict(polygons, resolutions, default_resolution_max=10))
+```
+
+For more detailed information on how the mesh size is determined, you can refer to the this [official gshm example](https://gmsh.info/doc/texinfo/gmsh.html#t10)
+
+### Physical region
+Up to now femwell support only homogenously filled materials with constant refractive index (there is no support for graded, continously varying materials). Every material region correspond to a *physical interface* and These physical interfaces coincide with the polynomials passed to `mesh_from_OrderedDict`. So if we define three polygons: core, box and cladding as in the previous example, then three different physical interfaces with the same name will be created.
+
+
 
 ## Custom Meshes
 

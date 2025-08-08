@@ -24,7 +24,7 @@ However, the Galerkin method remain abstract, in the sense that it does not expl
 The finite element method, as we mentioned before, is a Galerkin method, which depend on
 
 - geometry definition
-- meshing
+- [meshing](chapter-mesh)
 - selection of the element family (basis function)
 - assembly
 - solution of the associated linear system
