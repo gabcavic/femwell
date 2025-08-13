@@ -495,6 +495,29 @@ class Mode:
         return eta_E
 
 
+def tranvsverse_cartesian_basis(basis: Basis) -> Basis:
+    """Generate a generate FE basis for projecting transverse vectors in cartesian representation (x, y)
+
+    Take a base using 1st order Nedelec elements like ElementTriN1 and derive a new basis representing vectors on a cartesian coordinate system and not any longer in the local edge coordinates. This basis is useful when it is necessary to obtain projections of the tranvers fields like E_t and H_t.
+
+    Args:
+        basis (Basis): original base (should be based on 1st order Nedelec elements like `ElementTriN1`)
+    """
+    return basis.with_element(ElementVector(ElementDG(ElementTriP1())))
+
+
+def cartesian_basis(basis: Basis) -> Basis:
+    """Generate a generate FE basis for projecting 3D vectors in cartesian representation (x, y)
+
+    Take a base using the product element (Nedelec, Lagrangian) (see waveguide variational problem formulation in the documentation ) derive a new basis representing vectors on a cartesian coordinate system and not any longer in the local edge coordinates. This basis is useful when it is necessary to obtain projections of the tranvers fields like E_t and H_t.
+
+    Args:
+        basis (Basis): original base (should be based on 1st order Nedelec elements like `ElementTriN1`)
+    """
+
+    return basis.with_element(ElementVector(ElementDG(basis.elem.elems[1]), 3))
+
+
 @dataclass(frozen=True)
 class Modes:
     modes: List
